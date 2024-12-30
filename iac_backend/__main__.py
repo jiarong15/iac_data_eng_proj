@@ -3,7 +3,7 @@ from pulumi_aws import s3, rds
 import pulumi_eks as eks
 from pulumi_kubernetes.helm.v3 import Chart, ChartOpts, FetchOpts
 from retrieve_secrets import get_secret
-
+from s3_service_accounts import S3ServiceAccount
  
 ALL_SECRETS = get_secret()
 
@@ -58,6 +58,14 @@ mlflow = Chart(
         }
     ),
     opts=pulumi.ResourceOptions(provider=cluster._provider)
+)
+
+mlflow_service_account = S3ServiceAccount(name='mlflow-service-account',
+                                          args={'namespace': 'default',
+                                                'oidcProvider': cluster.core.oidcProvider,
+                                                'readOnly': False
+                                            },
+                                            opts=pulumi.ResourceOptions(provider=cluster._provider)
 )
 
 pulumi.export('bucket_name', mlflow_artifact_store.id)
