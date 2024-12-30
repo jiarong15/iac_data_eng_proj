@@ -1,0 +1,4 @@
+environment:
+  - full_stack_data_engineering/dev
+config:
+  aws:region: ap-southeast-1

@@ -1,0 +1,11 @@
+name: iac_backend
+description: full stack data engineering project
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
