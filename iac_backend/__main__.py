@@ -2,6 +2,7 @@ import pulumi
 from pulumi_aws import s3, rds, route53
 import pulumi_eks as eks
 from pulumi_kubernetes.helm.v3 import Chart, ChartOpts, FetchOpts
+import pulumi_kubernetes as k8s
 from retrieve_secrets import get_secret
 from s3_service_accounts import S3ServiceAccount
 from traefik_route import TraefikRoute
@@ -40,8 +41,9 @@ traefik = Chart(
     ChartOpts(
         chart="traefik",
         version="20.2.1",
+        # version="latest",
         fetch_opts=FetchOpts(
-            repo="https://traefik.github.io/charts",
+            repo="https://traefik.github.io/charts"
         )
     ), opts=pulumi.ResourceOptions(provider=cluster._provider)
 )
@@ -72,24 +74,21 @@ mlflow = Chart(
 )
 
 TraefikRoute(name="mlflow-route",
-             args={"namespace": "defualt",
+             args={"namespace": "default",
                    "prefix": "/mlflow",
-                   "service": mlflow.get_resource("v1/development", "mlflow")
+                   "service": mlflow.get_resource("v1/Service", "mlflow")
                   },
-             opts=pulumi.ResourceOptions(provider=cluster._provider)    
+             opts=pulumi.ResourceOptions(provider=cluster._provider)
 )
 
-# route53.Record("record",
-#                zone_id=ALL_SECRETS["hosted_zone"],
-#                name="mlflow.jr25.com",
-#                type=route53.RecordType.CNAME,
-#                ttl=300,
-#                records=[traefik.get_resource('v1/development', 'traefik').status.loadBalancer.ingress[0].hostname]
-# )
+route53.Record("dns-record",
+               zone_id=ALL_SECRETS["hosted_zone"],
+               name="mlflow.jr25.com",
+               type=route53.RecordType.CNAME,
+               ttl=300,
+               records=[traefik.get_resource('v1/Service', 'default/traefik').status.loadBalancer.ingress[0].hostname]
+)
 
 pulumi.export('bucket_name', mlflow_artifact_store.id)
 pulumi.export("kubeconfig", cluster.kubeconfig)
 
-
-# print(dir(traefik))
-traefik.get_resource('v1/development', 'mlflow')
